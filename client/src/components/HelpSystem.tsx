@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../lib/i18n';
 import { useAccessibility } from '../lib/accessibility';
-import { useAnalytics } from '../lib/analytics';
+import { useInteractionTracking } from '../lib/analytics';
 
 interface HelpSystemProps {
   isOpen: boolean;
@@ -19,7 +19,7 @@ interface HelpStep {
 const HelpSystem: React.FC<HelpSystemProps> = ({ isOpen, onClose }) => {
   const { t, isRTL } = useLanguage();
   const { speak } = useAccessibility();
-  const { trackClick } = useAnalytics();
+  const { trackClick } = useInteractionTracking();
   const [currentStep, setCurrentStep] = useState(0);
   const [showTour, setShowTour] = useState(false);
 
