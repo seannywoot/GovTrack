@@ -1,12 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useLanguage } from "./lib/i18n";
-import {
-  useAccessibility,
-} from "./lib/accessibility";
-import {
-  usePageTracking,
-  useInteractionTracking,
-} from "./lib/analytics";
+import { useAccessibility } from "./lib/accessibility";
+import { usePageTracking, useInteractionTracking } from "./lib/analytics";
+import { title } from "process";
 
 // Types
 interface Budget {
@@ -60,9 +56,9 @@ interface IrregularityReport {
 
 // Utility Functions
 const formatCurrency = (n: number) =>
-  new Intl.NumberFormat("en-US", {
+  new Intl.NumberFormat("en-PH", {
     style: "currency",
-    currency: "USD",
+    currency: "PHP",
     maximumFractionDigits: 0,
   }).format(n);
 const formatDate = (iso: string) => new Date(iso).toLocaleDateString();
@@ -263,6 +259,7 @@ const GovTrackPage: React.FC = () => {
   const [compareSet, setCompareSet] = useState<Set<string>>(new Set());
   const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showReportConfirmation, setShowReportConfirmation] = useState(false);
   const [reportDraft, setReportDraft] = useState<Partial<IrregularityReport>>({
     severity: "Medium",
     type: "Spending Concern",
@@ -757,6 +754,10 @@ const GovTrackPage: React.FC = () => {
 
   const submitReport = () => {
     if (!reportDraft.subject || !reportDraft.description) return;
+    setShowReportConfirmation(true);
+  };
+
+  const confirmSubmitReport = () => {
     const newReport: IrregularityReport = {
       id: "r" + Date.now(),
       type: reportDraft.type || "Spending Concern",
@@ -771,13 +772,15 @@ const GovTrackPage: React.FC = () => {
     };
     setReports((prev) => [newReport, ...prev]);
     setShowReportModal(false);
+    setShowReportConfirmation(false);
+    setReportDraft({
+      severity: "Medium",
+      type: "Spending Concern",
+    });
   };
 
-  const updateReportStatus = (
-    id: string,
-    status: IrregularityReport["status"]
-  ) => {
-    setReports((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+  const cancelSubmitReport = () => {
+    setShowReportConfirmation(false);
   };
 
   const exportData = (type: "budgets" | "projects") => {
@@ -1892,26 +1895,7 @@ const GovTrackPage: React.FC = () => {
                               {relativeTime(r.createdAt)}
                             </td>
                             <td className="p-3 flex gap-2 flex-wrap">
-                              {r.status === "Submitted" && (
-                                <button
-                                  onClick={() =>
-                                    updateReportStatus(r.id, "Under Review")
-                                  }
-                                  className="text-xs px-2 py-1 rounded bg-yellow-500 text-white hover:bg-yellow-600"
-                                >
-                                  Review
-                                </button>
-                              )}
-                              {r.status !== "Resolved" && (
-                                <button
-                                  onClick={() =>
-                                    updateReportStatus(r.id, "Resolved")
-                                  }
-                                  className="text-xs px-2 py-1 rounded bg-green-600 text-white hover:bg-green-700"
-                                >
-                                  Resolve
-                                </button>
-                              )}
+                              {/* Status management removed - user-only system */}
                             </td>
                           </tr>
                         );
@@ -1983,7 +1967,7 @@ const GovTrackPage: React.FC = () => {
                       className="border-t border-gray-200"
                     >
                       <td className="p-2 font-medium text-gray-800 max-w-[8rem] truncate">
-                        {(item as any).name || (item as Budget).department}
+                        {(item as unknown).name || (item as Budget).department}
                       </td>
                       <td className="p-2 text-gray-600">
                         {isBudget ? "Budget" : "Project"}
@@ -2491,6 +2475,95 @@ const GovTrackPage: React.FC = () => {
             ignored.
           </div>
         </form>
+      </Modal>
+
+      {/* Report Confirmation Modal */}
+      <Modal
+        open={showReportConfirmation}
+        onClose={cancelSubmitReport}
+        title="Confirm Report Submission"
+        actions={
+          <>
+            <button
+              onClick={cancelSubmitReport}
+              className="px-4 py-2 text-sm rounded-md border border-gray-300 bg-white hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmSubmitReport}
+              className="px-4 py-2 text-sm rounded-md bg-red-600 text-white hover:bg-red-700"
+            >
+              Yes, Submit Report
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <div className="text-yellow-600 text-xl">⚠️</div>
+              <div>
+                <h4 className="font-medium text-yellow-800 mb-1">
+                  Important Notice
+                </h4>
+                <p className="text-sm text-yellow-700">
+                  You are about to submit a transparency report. Please ensure
+                  all information is accurate and complete before proceeding.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <span className="text-sm font-medium text-gray-700">Type:</span>
+              <span className="ml-2 text-sm text-gray-900">
+                {reportDraft.type}
+              </span>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-gray-700">
+                Subject:
+              </span>
+              <span className="ml-2 text-sm text-gray-900">
+                {reportDraft.subject}
+              </span>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-gray-700">
+                Severity:
+              </span>
+              <span className="ml-2 text-sm text-gray-900">
+                {reportDraft.severity}
+              </span>
+            </div>
+            {reportDraft.department && (
+              <div>
+                <span className="text-sm font-medium text-gray-700">
+                  Department:
+                </span>
+                <span className="ml-2 text-sm text-gray-900">
+                  {reportDraft.department}
+                </span>
+              </div>
+            )}
+            <div>
+              <span className="text-sm font-medium text-gray-700">
+                Description:
+              </span>
+              <div className="mt-1 p-2 bg-gray-50 rounded text-sm text-gray-900 max-h-20 overflow-y-auto">
+                {reportDraft.description}
+              </div>
+            </div>
+          </div>
+
+          <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
+            <strong>Note:</strong> Once submitted, this report will be recorded
+            in the system. All reports are treated seriously and reviewed for
+            transparency concerns.
+          </div>
+        </div>
       </Modal>
 
       <footer className="mt-8 border-t border-gray-200 bg-white">

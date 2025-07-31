@@ -500,18 +500,11 @@ export const useLanguage = () => {
   return context;
 };
 
-export const formatCurrency = (amount: number, language: Language = 'en'): string => {
-  const currencyMap: Record<Language, string> = {
-    en: 'USD',
-    es: 'USD',
-    fr: 'EUR',
-    pt: 'BRL',
-    ar: 'USD'
-  };
-
-  return new Intl.NumberFormat(language === 'ar' ? 'ar-SA' : language, {
+export const formatCurrency = (amount: number): string => {
+  // Use Philippine Peso (PHP) with en-PH locale to ensure ₱ symbol is displayed
+  return new Intl.NumberFormat('en-PH', {
     style: 'currency',
-    currency: currencyMap[language],
+    currency: 'PHP',
     maximumFractionDigits: 0,
   }).format(amount);
 };
